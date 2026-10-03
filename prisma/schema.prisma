@@ -1,0 +1,645 @@
+// =============================================================================
+// VEHIQ — Automotive Intelligence Platform for Spain
+// Database Schema (PostgreSQL via Prisma)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// AUTHENTICATION & USERS
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  company       String?
+  role          UserRole  @default(USER)
+  plan          Plan      @default(FREE)
+  phone         String?
+  locale        String    @default("es")
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+  apiKeys        ApiKey[]
+  lookups        VehicleLookup[]
+  valuations     Valuation[]
+  reports        Report[]
+  sessions       Session[]
+  accounts       Account[]
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  USER
+  DEALER
+  INSURER
+  FLEET_MANAGER
+  ADMIN
+  API_PARTNER
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+// =============================================================================
+// ORGANIZATIONS
+// =============================================================================
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  type      OrganizationType
+  taxId     String?          @unique // CIF / NIF
+  address   String?
+  city      String?
+  province  String?
+  postcode  String?
+  country   String           @default("ES")
+  phone     String?
+  website   String?
+  logo      String?
+  plan      Plan             @default(STARTER)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  members      User[]
+  apiKeys      ApiKey[]
+  vehicles     DealerVehicle[]
+  subscription Subscription?
+
+  @@index([taxId])
+}
+
+enum OrganizationType {
+  DEALERSHIP
+  INSURANCE_COMPANY
+  FLEET_OPERATOR
+  LEASING_COMPANY
+  FINANCIAL_INSTITUTION
+  INSPECTION_CENTER    // ITV
+  GOVERNMENT
+  OTHER
+}
+
+// =============================================================================
+// VEHICLES — Core Domain
+// =============================================================================
+
+model Vehicle {
+  id              String   @id @default(cuid())
+  matricula       String   @unique          // Spanish license plate
+  vin             String?  @unique          // Vehicle Identification Number
+  bastidor        String?                   // Frame number (Spanish)
+
+  // Basic specs
+  marca           String                    // Brand
+  modelo          String                    // Model
+  version         String?                   // Trim / version
+  carroceria      String?                   // Body type
+  color           String?
+  colorCode       String?
+  fechaMatricula  DateTime?                 // First registration date
+  fechaFabricacion DateTime?                // Manufacturing date
+
+  // Engine & performance
+  combustible     FuelType?
+  cilindrada      Int?                      // cc
+  potenciaCv      Int?                      // Horsepower
+  potenciaKw      Float?                    // kW
+  co2Emissions    Float?                    // g/km
+  euroNorm        String?                   // Euro 6, etc.
+  transmision     TransmissionType?
+  traccion        DriveType?
+
+  // Dimensions
+  puertas         Int?
+  plazas          Int?
+  pesoMax         Int?                      // Max weight kg
+  tara            Int?                      // Curb weight kg
+
+  // Administrative
+  provinciaActual String?                   // Current province
+  municipio       String?                   // Municipality
+  tipoVehiculo    String?                   // Vehicle type classification
+  uso             String?                   // Private / commercial
+
+  // DGT data
+  dgtLastSync     DateTime?
+  dgtStatus       String?                   // Alta / Baja temporal / Baja definitiva
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  histories       VehicleHistory[]
+  inspections     Inspection[]
+  valuations      Valuation[]
+  lookups         VehicleLookup[]
+  fraudAlerts     FraudAlert[]
+  listings        DealerVehicle[]
+  insuranceClaims InsuranceClaim[]
+  mileageRecords  MileageRecord[]
+
+  @@index([matricula])
+  @@index([vin])
+  @@index([marca, modelo])
+  @@index([provinciaActual])
+}
+
+enum FuelType {
+  GASOLINA
+  DIESEL
+  HIBRIDO
+  HIBRIDO_ENCHUFABLE
+  ELECTRICO
+  GLP
+  GNC
+  HIDROGENO
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATICO
+  CVT
+  DOBLE_EMBRAGUE
+}
+
+enum DriveType {
+  TRACCION_DELANTERA
+  TRACCION_TRASERA
+  TRACCION_TOTAL
+}
+
+// =============================================================================
+// VEHICLE HISTORY
+// =============================================================================
+
+model VehicleHistory {
+  id          String            @id @default(cuid())
+  vehicleId   String
+  eventType   VehicleEventType
+  eventDate   DateTime
+  description String?           @db.Text
+  source      DataSource
+  sourceRef   String?           // External reference ID
+  province    String?
+  metadata    Json?             // Flexible extra data
+  createdAt   DateTime          @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, eventDate])
+  @@index([eventType])
+}
+
+enum VehicleEventType {
+  MATRICULACION           // First registration
+  TRANSFERENCIA           // Ownership transfer
+  BAJA_TEMPORAL           // Temporary deregistration
+  BAJA_DEFINITIVA         // Permanent deregistration
+  ALTA_TRAS_BAJA          // Re-registration
+  CAMBIO_DOMICILIO        // Address change
+  REFORMA                 // Vehicle modification
+  INSPECCION_ITV          // ITV inspection
+  SINIESTRO              // Accident / insurance claim
+  ROBO                   // Theft report
+  EMBARGO                // Legal seizure / lien
+  RESERVA_DOMINIO        // Finance reservation
+  IMPORTACION            // Import
+  CAMBIO_SERVICIO        // Service type change
+}
+
+enum DataSource {
+  DGT                    // Direccion General de Trafico
+  ITV                    // Inspeccion Tecnica de Vehiculos
+  INSURANCE              // Insurance company feed
+  DEALER                 // Dealer report
+  USER_REPORT            // User-submitted
+  SCRAPING               // Web scraping
+  API_PARTNER            // Partner API
+  MANUAL                 // Manual entry
+}
+
+// =============================================================================
+// ITV INSPECTIONS
+// =============================================================================
+
+model Inspection {
+  id              String           @id @default(cuid())
+  vehicleId       String
+  stationCode     String?          // ITV station code
+  stationName     String?
+  inspectionDate  DateTime
+  result          InspectionResult
+  mileage         Int?             // Odometer reading at inspection
+  nextInspection  DateTime?        // When next ITV is due
+  defects         Json?            // Array of defect codes
+  observations    String?          @db.Text
+  createdAt       DateTime         @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, inspectionDate])
+}
+
+enum InspectionResult {
+  FAVORABLE
+  DESFAVORABLE            // Failed — must fix and return
+  NEGATIVA                // Severe — cannot drive
+  NO_PRESENTADO           // No-show
+}
+
+// =============================================================================
+// VALUATIONS — AI-powered
+// =============================================================================
+
+model Valuation {
+  id              String          @id @default(cuid())
+  vehicleId       String
+  userId          String?
+
+  // Valuation inputs
+  mileage         Int             // Current km
+  condition       VehicleCondition
+  province        String?         // Location affects price
+  extras          Json?           // List of extras / options
+  photos          Json?           // Photo URLs for condition assessment
+
+  // AI outputs
+  valuationLow    Int             // Lower bound (cents)
+  valuationMid    Int             // Best estimate (cents)
+  valuationHigh   Int             // Upper bound (cents)
+  confidence      Float           // 0-1 confidence score
+  modelVersion    String          // ML model version used
+  factors         Json?           // Price factors breakdown
+
+  // Market context
+  marketTrend     MarketTrend?
+  daysToSell      Int?            // Estimated days to sell
+  similarListings Int?            // Number of comparable listings
+  avgListingPrice Int?            // Average listing price (cents)
+
+  createdAt       DateTime        @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([vehicleId, createdAt])
+  @@index([userId])
+}
+
+enum VehicleCondition {
+  COMO_NUEVO             // Like new
+  MUY_BUENO              // Very good
+  BUENO                  // Good
+  ACEPTABLE              // Fair
+  NECESITA_REPARACION    // Needs repair
+}
+
+enum MarketTrend {
+  SUBIENDO               // Rising
+  ESTABLE                // Stable
+  BAJANDO                // Declining
+}
+
+// =============================================================================
+// FRAUD DETECTION
+// =============================================================================
+
+model FraudAlert {
+  id          String        @id @default(cuid())
+  vehicleId   String
+  alertType   FraudType
+  severity    AlertSeverity
+  title       String
+  description String        @db.Text
+  evidence    Json?         // Supporting data
+  status      AlertStatus   @default(ACTIVE)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime      @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
+  @@index([alertType, severity])
+  @@index([status])
+}
+
+enum FraudType {
+  ODOMETRO_MANIPULADO    // Odometer rollback
+  VIN_CLONADO            // Cloned VIN
+  SINIESTRO_OCULTO       // Hidden accident
+  ROBO_ACTIVO            // Active theft report
+  EMBARGO_OCULTO         // Hidden lien/seizure
+  IMPORTACION_IRREGULAR  // Irregular import
+  DOCUMENTACION_FALSA    // Fake documentation
+  IDENTIDAD_ALTERADA     // Altered identity
+}
+
+enum AlertSeverity {
+  CRITICA
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum AlertStatus {
+  ACTIVE
+  INVESTIGATING
+  CONFIRMED
+  DISMISSED
+  RESOLVED
+}
+
+// =============================================================================
+// MILEAGE TRACKING
+// =============================================================================
+
+model MileageRecord {
+  id          String     @id @default(cuid())
+  vehicleId   String
+  mileage     Int        // km reading
+  recordDate  DateTime
+  source      DataSource
+  sourceRef   String?
+  verified    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, recordDate])
+}
+
+// =============================================================================
+// INSURANCE
+// =============================================================================
+
+model InsuranceClaim {
+  id            String    @id @default(cuid())
+  vehicleId     String
+  claimDate     DateTime
+  claimType     String    // Collision, theft, fire, etc.
+  severity      String?   // Light, moderate, total loss
+  repairCost    Int?      // Repair cost in cents
+  description   String?   @db.Text
+  insurerCode   String?
+  resolved      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, claimDate])
+}
+
+// =============================================================================
+// DEALER INVENTORY
+// =============================================================================
+
+model DealerVehicle {
+  id              String    @id @default(cuid())
+  vehicleId       String
+  organizationId  String
+  listingPrice    Int       // Price in cents
+  status          ListingStatus @default(ACTIVE)
+  description     String?   @db.Text
+  photos          Json?     // Array of photo URLs
+  featured        Boolean   @default(false)
+  publishedAt     DateTime?
+  soldAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([vehicleId])
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  RESERVED
+  SOLD
+  REMOVED
+}
+
+// =============================================================================
+// API KEYS & ACCESS
+// =============================================================================
+
+model ApiKey {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  name            String
+  userId          String?
+  organizationId  String?
+  permissions     Json      // Array of permission strings
+  rateLimit       Int       @default(1000)  // Requests per hour
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  usageLogs    ApiUsageLog[]
+
+  @@index([key])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model ApiUsageLog {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  endpoint   String
+  method     String
+  statusCode Int
+  latencyMs  Int
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id])
+
+  @@index([apiKeyId, createdAt])
+  @@index([endpoint, createdAt])
+}
+
+// =============================================================================
+// VEHICLE LOOKUPS (Audit Trail)
+// =============================================================================
+
+model VehicleLookup {
+  id         String     @id @default(cuid())
+  vehicleId  String
+  userId     String
+  lookupType LookupType
+  source     String?    // API, web, mobile
+  ip         String?
+  createdAt  DateTime   @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([vehicleId, createdAt])
+}
+
+enum LookupType {
+  HISTORY
+  VALUATION
+  FRAUD_CHECK
+  FULL_REPORT
+}
+
+// =============================================================================
+// REPORTS
+// =============================================================================
+
+model Report {
+  id         String     @id @default(cuid())
+  userId     String
+  type       ReportType
+  title      String
+  data       Json       // Report data payload
+  format     String     @default("pdf")
+  fileUrl    String?    // S3/R2 URL to generated file
+  expiresAt  DateTime?
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+enum ReportType {
+  VEHICLE_HISTORY
+  VALUATION
+  FRAUD_ANALYSIS
+  MARKET_REPORT
+  FLEET_OVERVIEW
+  CUSTOM
+}
+
+// =============================================================================
+// SUBSCRIPTIONS & BILLING
+// =============================================================================
+
+model Subscription {
+  id               String             @id @default(cuid())
+  organizationId   String             @unique
+  stripeCustomerId String?
+  stripeSubId      String?
+  plan             Plan
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd DateTime?
+  cancelAtEnd      Boolean            @default(false)
+  lookupQuota      Int                @default(100) // Monthly lookups
+  lookupUsed       Int                @default(0)
+  apiCallQuota     Int                @default(1000)
+  apiCallUsed      Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([stripeCustomerId])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  PAUSED
+}
+
+// =============================================================================
+// MARKET DATA
+// =============================================================================
+
+model MarketListing {
+  id            String   @id @default(cuid())
+  externalId    String   @unique  // Source listing ID
+  source        String             // coches.net, autocasion, wallapop, etc.
+  marca         String
+  modelo        String
+  version       String?
+  year          Int
+  mileage       Int
+  price         Int                // Cents
+  fuelType      FuelType?
+  province      String?
+  city          String?
+  dealerName    String?
+  url           String?
+  photos        Json?
+  scrapedAt     DateTime
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([marca, modelo, year])
+  @@index([province])
+  @@index([scrapedAt])
+  @@index([source, active])
+}
