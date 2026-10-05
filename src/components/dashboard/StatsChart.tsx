@@ -28,6 +28,9 @@ interface StatsChartProps {
   height?: number;
   title?: string;
   className?: string;
+  /** accepted but ignored — callers may pass these for convenience */
+  color?: string;
+  type?: string;
 }
 
 export function StatsChart({

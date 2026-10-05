@@ -49,9 +49,10 @@ export function DonutChart({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(val: number, _: string, entry: { payload: DonutSlice }) => [
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={(val: number, _: string, entry: any) => [
                   val,
-                  entry.payload.label,
+                  (entry?.payload as DonutSlice)?.label ?? '',
                 ]}
                 contentStyle={{
                   fontSize: 12,

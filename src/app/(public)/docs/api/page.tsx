@@ -3,7 +3,8 @@ import { Code, Key, Gauge, Layers, ShieldCheck, Zap, BookOpen, Terminal, CheckCi
 import { Button } from '@/components/ui/Button';
 import { CTASection } from '@/components/public/CTASection';
 import Link from 'next/link';
-import { ApiPlayground } from './ApiPlayground';
+import dynamic from 'next/dynamic';
+const ApiPlayground = dynamic(() => import('./ApiPlayground').then(m => ({ default: m.ApiPlayground })), { ssr: false });
 
 export const metadata: Metadata = {
   title: 'API de Datos Vehiculares | VEHIQ',
