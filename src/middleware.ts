@@ -31,6 +31,9 @@ export default withAuth(
         // Public routes — no auth needed
         if (
           pathname === '/' ||
+          pathname === '/login' ||
+          pathname === '/register' ||
+          pathname === '/forgot-password' ||
           pathname.startsWith('/auth/') ||
           pathname.startsWith('/api/auth/') ||
           pathname.startsWith('/solicitar-acceso') ||
@@ -58,7 +61,7 @@ export default withAuth(
       },
     },
     pages: {
-      signIn: '/auth/login',
+      signIn: '/login',
     },
   }
 );
