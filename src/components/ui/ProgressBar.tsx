@@ -5,10 +5,13 @@ type ProgressSize = 'sm' | 'md' | 'lg';
 
 interface ProgressBarProps {
   value: number; // 0-100
+  max?: number;  // if provided, value is treated as raw and divided by max
   size?: ProgressSize;
   color?: ProgressColor;
   className?: string;
   showLabel?: boolean;
+  showValue?: boolean; // alias for showLabel
+  label?: string;      // descriptive label rendered above the bar
 }
 
 const colorMap: Record<ProgressColor, string> = {
@@ -26,18 +29,28 @@ const sizeMap: Record<ProgressSize, string> = {
 
 export default function ProgressBar({
   value,
+  max,
   size = 'md',
   color = 'teal',
   className,
   showLabel = false,
+  showValue = false,
+  label,
 }: ProgressBarProps) {
-  const clamped = Math.max(0, Math.min(100, value));
+  const percentage = max != null ? Math.round((value / max) * 100) : value;
+  const clamped = Math.max(0, Math.min(100, percentage));
+  const displayShowLabel = showLabel || showValue;
 
   return (
     <div className={cn('w-full', className)}>
-      {showLabel && (
+      {(label || displayShowLabel) && (
         <div className="flex justify-between text-xs text-brand-muted mb-1">
-          <span>{clamped}%</span>
+          <span>{label ?? ''}</span>
+          {displayShowLabel && (
+            <span>
+              {max != null ? `${value} / ${max}` : `${clamped}%`}
+            </span>
+          )}
         </div>
       )}
       <div className={cn('w-full rounded-full bg-brand-alt-bg overflow-hidden', sizeMap[size])}>

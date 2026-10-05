@@ -270,7 +270,7 @@ export function Header() {
           {/* Desktop right */}
           <div className="hidden lg:flex items-center gap-3">
             <Link
-              href="/auth/login"
+              href="/login"
               className="text-sm font-medium text-brand-navy hover:text-brand-teal transition-colors"
             >
               Iniciar sesion
@@ -372,7 +372,7 @@ export function Header() {
             {/* Mobile CTA */}
             <div className="pt-4 border-t border-brand-border space-y-3">
               <Link
-                href="/auth/login"
+                href="/login"
                 onClick={() => setMobileOpen(false)}
                 className="block text-center py-2.5 text-sm font-medium text-brand-navy hover:text-brand-teal"
               >

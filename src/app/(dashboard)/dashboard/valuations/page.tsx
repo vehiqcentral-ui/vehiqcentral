@@ -114,7 +114,7 @@ export default function ValuationsPage() {
   /* Chart data — last 7 days */
   const chartData = (() => {
     const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-    return days.map(label => ({ label, value: Math.floor(Math.random() * 21) + 5 }));
+    return days.map(name => ({ name, value: Math.floor(Math.random() * 21) + 5 }));
   })();
 
   const toggleSelected = (id: string) => {
@@ -238,9 +238,7 @@ export default function ValuationsPage() {
         <StatsChart
           data={chartData}
           title="Valoraciones ultimos 7 dias"
-          color="teal"
           height={220}
-          type="bar"
         />
       </Card>
 
