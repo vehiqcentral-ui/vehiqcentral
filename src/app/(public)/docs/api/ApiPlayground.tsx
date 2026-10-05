@@ -48,7 +48,7 @@ const METHOD_COLORS: Record<string, string> = {
   DELETE: 'bg-red-100 text-red-700',
 };
 
-export default function ApiPlayground() {
+export function ApiPlayground() {
   const [selected, setSelected] = useState<Endpoint>(ENDPOINTS[0]);
   const [apiKey, setApiKey] = useState('');
   const [response, setResponse] = useState<string | null>(null);
@@ -153,3 +153,5 @@ export default function ApiPlayground() {
     </section>
   );
 }
+
+export default ApiPlayground;

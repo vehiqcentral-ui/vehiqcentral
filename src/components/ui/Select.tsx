@@ -6,13 +6,13 @@ interface SelectOption {
   label: string;
 }
 
-interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   options: SelectOption[];
-  onChange?: (value: string) => void;
+  label?: string;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>((
-  { className, options, onChange, ...props },
+  { className, options, label: _label, ...props },
   ref,
 ) => (
   <select
@@ -23,7 +23,6 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>((
       'transition-colors duration-150 appearance-none cursor-pointer',
       className,
     )}
-    onChange={(e) => onChange?.(e.target.value)}
     {...props}
   >
     {options.map((opt) => (
