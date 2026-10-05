@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Globe } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                              */
@@ -7,55 +7,53 @@ import { Globe } from 'lucide-react';
 
 const footerColumns = [
   {
-    title: 'Soluciones',
+    title: 'Oplossingen',
     links: [
-      { label: 'Plataforma', href: '/solutions/platform' },
-      { label: 'Datos de vehiculos', href: '/solutions/vehicle-data' },
-      { label: 'Informes vehiculares', href: '/solutions/reports' },
-      { label: 'Valoracion inteligente', href: '/solutions/valuation' },
-      { label: 'Deteccion de fraude', href: '/solutions/fraud' },
-      { label: 'Analitica de mercado', href: '/solutions/market' },
-      { label: 'API & Datos', href: '/solutions/api' },
-      { label: 'Asistente IA', href: '/solutions/ai' },
+      { label: 'Voertuigdata', href: '/solutions/vehicle-data' },
+      { label: 'AI-taxatie', href: '/solutions/valuation' },
+      { label: 'Fraudedetectie', href: '/solutions/fraud' },
+      { label: 'Voertuigrapporten', href: '/solutions/reports' },
+      { label: 'Marktanalyse', href: '/solutions/market' },
+      { label: 'API & Integraties', href: '/solutions/api' },
+      { label: 'AI-assistent', href: '/solutions/ai' },
     ],
   },
   {
-    title: 'Para empresas',
+    title: 'Voor wie',
     links: [
-      { label: 'Concesionarios', href: '/for-dealers' },
-      { label: 'Importadores', href: '/for-importers' },
-      { label: 'Exportadores', href: '/for-exporters' },
-      { label: 'Alquiler y flotas', href: '/for-fleet' },
-      { label: 'Talleres', href: '/for-garages' },
-      { label: 'Aseguradoras', href: '/for-insurers' },
-      { label: 'Startups y developers', href: '/for-startups' },
+      { label: 'Dealers', href: '/for-dealers' },
+      { label: 'Importeurs', href: '/for-importers' },
+      { label: 'Lease & fleet', href: '/for-fleet' },
+      { label: 'Garages & taxateurs', href: '/for-garages' },
+      { label: 'Verzekeraars', href: '/for-insurers' },
+      { label: 'Dealer holdings', href: '/for-dealers' },
+      { label: 'Developers', href: '/for-startups' },
     ],
   },
   {
-    title: 'Recursos',
+    title: 'Resources',
     links: [
       { label: 'Blog', href: '/blog' },
-      { label: 'Noticias', href: '/noticias' },
-      { label: 'Guias', href: '/guias' },
-      { label: 'Descargas', href: '/descargas' },
-      { label: 'Centro de ayuda', href: '/ayuda' },
+      { label: 'Nieuws', href: '/news' },
+      { label: 'Downloads', href: '/downloads' },
+      { label: 'Helpcentrum', href: '/help' },
       { label: 'FAQ', href: '/faq' },
-      { label: 'Documentacion API', href: '/docs/api' },
+      { label: 'API-documentatie', href: '/docs/api' },
     ],
   },
   {
-    title: 'Empresa',
+    title: 'Bedrijf',
     links: [
-      { label: 'Sobre nosotros', href: '/sobre-nosotros' },
-      { label: 'Contacto', href: '/contacto' },
-      { label: 'Trabaja con nosotros', href: '/empleo' },
+      { label: 'Over ons', href: '/about' },
+      { label: 'Contact', href: '/contact' },
+      { label: 'Demo aanvragen', href: '/pricing-request' },
     ],
   },
 ];
 
 const legalLinks = [
-  { label: 'Privacidad', href: '/privacidad' },
-  { label: 'Terminos', href: '/terminos' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Algemene voorwaarden', href: '/terms' },
   { label: 'Cookies', href: '/cookies' },
 ];
 
@@ -67,47 +65,67 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-brand-navy text-white" role="contentinfo">
+    <footer className="bg-[#1A1A2E] text-white" role="contentinfo">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-8">
         {/* Top: logo + columns */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 lg:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10 lg:gap-8">
           {/* Brand column */}
-          <div className="col-span-2 md:col-span-3 lg:col-span-1 mb-6 lg:mb-0">
-            <Link href="/" className="inline-flex items-center gap-2" aria-label="VEHIQ inicio">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 36 36"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <rect width="36" height="36" rx="8" fill="#0FAFA9" />
-                <path
-                  d="M8 12L13.5 24H15.5L18 18.5L20.5 24H22.5L28 12H25L21.5 21L18 13H18L14.5 21L11 12H8Z"
-                  fill="white"
-                />
-              </svg>
-              <span className="font-heading font-extrabold text-lg tracking-tight leading-tight">
-                VEHIQ
-                <span className="block text-[8px] font-semibold text-white/50 tracking-[0.2em] -mt-0.5">CENTRAL</span>
-              </span>
+          <div className="col-span-2 mb-6 lg:mb-0">
+            <Link href="/" className="inline-flex items-center gap-2.5" aria-label="VehiqCentral home">
+              <div className="w-9 h-9 rounded-lg bg-[#0057B8] flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                  <path
+                    d="M3 7L7.5 15H9L11 11L13 15H14.5L19 7H17L14.5 13L11 8L7.5 13L5 7H3Z"
+                    fill="white"
+                  />
+                  <circle cx="18" cy="14" r="2" fill="#FFC107" />
+                </svg>
+              </div>
+              <div className="leading-tight">
+                <span className="font-extrabold text-[17px] text-white tracking-tight">
+                  Vehiq<span className="text-blue-300">Central</span>
+                </span>
+                <div className="text-[9px] font-semibold text-white/40 tracking-[0.18em] uppercase -mt-0.5">
+                  Automotive Platform
+                </div>
+              </div>
             </Link>
-            <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-xs">
-              Tu centro de datos automotriz en España. Datos fiables, valoraciones precisas y
-              herramientas profesionales para tu negocio.
+
+            <p className="mt-5 text-sm text-white/55 leading-relaxed max-w-xs">
+              Het alles-in-één automotive dataplatform voor professionals in Nederland.
+              Betrouwbare data, slimme taxaties en fraudedetectie in één overzicht.
             </p>
 
-            {/* Social placeholders */}
+            {/* Contact info */}
+            <div className="mt-6 space-y-2">
+              <a href="tel:+31850001234" className="flex items-center gap-2 text-sm text-white/55 hover:text-white transition-colors">
+                <Phone size={13} />
+                085 000 12 34
+              </a>
+              <a href="mailto:info@vehiqcentral.nl" className="flex items-center gap-2 text-sm text-white/55 hover:text-white transition-colors">
+                <Mail size={13} />
+                info@vehiqcentral.nl
+              </a>
+              <div className="flex items-center gap-2 text-sm text-white/55">
+                <MapPin size={13} />
+                Nederland
+              </div>
+            </div>
+
+            {/* Social */}
             <div className="flex items-center gap-3 mt-6">
-              {['LinkedIn', 'X', 'YouTube'].map((name) => (
+              {[
+                { name: 'LinkedIn', letter: 'in' },
+                { name: 'X', letter: 'X' },
+                { name: 'YouTube', letter: '▶' },
+              ].map((social) => (
                 <a
-                  key={name}
+                  key={social.name}
                   href="#"
-                  aria-label={name}
-                  className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-brand-teal hover:text-white transition-colors text-xs font-semibold"
+                  aria-label={social.name}
+                  className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/60 hover:bg-[#0057B8] hover:text-white transition-colors text-xs font-bold"
                 >
-                  {name[0]}
+                  {social.letter}
                 </a>
               ))}
             </div>
@@ -116,13 +134,13 @@ export function Footer() {
           {/* Link columns */}
           {footerColumns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-heading font-bold text-white mb-4">{col.title}</h3>
+              <h3 className="text-sm font-bold text-white mb-4">{col.title}</h3>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-white/60 hover:text-brand-teal transition-colors"
+                      className="text-sm text-white/55 hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -133,38 +151,26 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Divider */}
+        {/* Divider + legal */}
         <div className="border-t border-white/10 mt-12 pt-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Legal links */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-white/50">
-              <span>&copy; {currentYear} VEHIQ Central. Todos los derechos reservados.</span>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-white/40">
+              <span>&copy; {currentYear} VehiqCentral B.V. Alle rechten voorbehouden.</span>
               {legalLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="hover:text-white/80 transition-colors"
+                  className="hover:text-white/70 transition-colors"
                 >
                   {link.label}
                 </Link>
               ))}
             </div>
 
-            {/* Language selector */}
-            <div className="flex items-center gap-2 text-sm text-white/50">
-              <Globe size={14} />
-              <select
-                className="bg-transparent text-white/50 text-sm border-none focus:outline-none cursor-pointer"
-                defaultValue="es"
-                aria-label="Idioma"
-              >
-                <option value="es" className="text-brand-navy">
-                  ES
-                </option>
-                <option value="en" className="text-brand-navy">
-                  EN
-                </option>
-              </select>
+            {/* BOVAG / RDW badges (placeholder) */}
+            <div className="flex items-center gap-3 text-xs text-white/30 font-semibold tracking-wide">
+              <span className="px-2.5 py-1 rounded border border-white/15">RDW Partner</span>
+              <span className="px-2.5 py-1 rounded border border-white/15">NAP Aangesloten</span>
             </div>
           </div>
         </div>
