@@ -1,11 +1,22 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
+
+// Demo mode: no database required — hardcoded credentials for UI preview
+const DEMO_USERS = [
+  {
+    id: 'demo-admin',
+    email: 'admin@vehiqcentral.es',
+    password: 'Vehiq2024!',
+    name: 'Admin Demo',
+    role: 'ADMIN',
+    plan: 'ENTERPRISE',
+    company: 'VehiqCentral',
+    organizationId: 'demo-org',
+    image: null,
+  },
+];
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -27,18 +38,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email y contraseña son obligatorios');
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase().trim() },
-          include: { organization: true },
-        });
+        const user = DEMO_USERS.find(
+          (u) =>
+            u.email === credentials.email.toLowerCase().trim() &&
+            u.password === credentials.password
+        );
 
-        if (!user || !user.passwordHash) {
-          throw new Error('Credenciales incorrectas');
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
-
-        if (!isValid) {
+        if (!user) {
           throw new Error('Credenciales incorrectas');
         }
 
@@ -49,7 +55,7 @@ export const authOptions: NextAuthOptions = {
           image: user.image,
           role: user.role,
           plan: user.plan,
-          company: user.organization?.name ?? user.company,
+          company: user.company,
           organizationId: user.organizationId,
         };
       },
