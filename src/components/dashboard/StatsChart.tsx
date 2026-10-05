@@ -30,7 +30,7 @@ interface StatsChartProps {
   className?: string;
 }
 
-export default function StatsChart({
+export function StatsChart({
   data,
   bars,
   xKey = 'name',
@@ -84,3 +84,5 @@ export default function StatsChart({
     </div>
   );
 }
+
+export default StatsChart;

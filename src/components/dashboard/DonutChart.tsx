@@ -16,7 +16,7 @@ interface DonutChartProps {
   size?: number;
 }
 
-export default function DonutChart({
+export function DonutChart({
   title,
   data,
   centerLabel,
@@ -90,3 +90,5 @@ export default function DonutChart({
     </div>
   );
 }
+
+export default DonutChart;

@@ -16,4 +16,13 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({ className, ...props }, ref
 
 Card.displayName = 'Card';
 
+export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h3
+      className={cn('text-base font-semibold text-brand-teal', className)}
+      {...props}
+    />
+  );
+}
+
 export default Card;
