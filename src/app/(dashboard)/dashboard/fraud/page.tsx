@@ -14,10 +14,15 @@ import {
   ShieldCheck,
   ShieldX,
   Info,
+  RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Input, Select, Badge, Card, ProgressBar, EmptyState,
+} from '@/components/ui';
+import { DonutChart } from '@/components/dashboard/DonutChart';
 
-/* ── Types ────────────────────────────── */
+/* -- Types -------------------------------- */
 
 interface AlertVehicle {
   id: string;
@@ -75,7 +80,7 @@ interface Pagination {
   totalPages: number;
 }
 
-/* ── Label / color maps ────────────────── */
+/* -- Label / color maps ------------------- */
 
 const severityLabels: Record<string, string> = {
   CRITICA: 'Critica',
@@ -84,11 +89,11 @@ const severityLabels: Record<string, string> = {
   BAJA: 'Baja',
 };
 
-const severityColors: Record<string, string> = {
-  CRITICA: 'bg-red-100 text-red-700',
-  ALTA: 'bg-orange-100 text-orange-700',
-  MEDIA: 'bg-amber-100 text-amber-700',
-  BAJA: 'bg-blue-100 text-blue-700',
+const severityBadgeVariant: Record<string, 'danger' | 'warning' | 'gold' | 'info'> = {
+  CRITICA: 'danger',
+  ALTA: 'warning',
+  MEDIA: 'gold',
+  BAJA: 'info',
 };
 
 const statusLabels: Record<string, string> = {
@@ -98,12 +103,28 @@ const statusLabels: Record<string, string> = {
   DISMISSED: 'Descartada',
 };
 
-const statusColors: Record<string, string> = {
-  ACTIVE: 'text-red-600',
-  INVESTIGATING: 'text-amber-600',
-  RESOLVED: 'text-brand-teal',
-  DISMISSED: 'text-brand-muted',
+const statusBadgeVariant: Record<string, 'danger' | 'warning' | 'success' | 'default'> = {
+  ACTIVE: 'danger',
+  INVESTIGATING: 'warning',
+  RESOLVED: 'success',
+  DISMISSED: 'default',
 };
+
+const severityOptions = [
+  { value: '', label: 'Todas severidades' },
+  { value: 'CRITICA', label: 'Critica' },
+  { value: 'ALTA', label: 'Alta' },
+  { value: 'MEDIA', label: 'Media' },
+  { value: 'BAJA', label: 'Baja' },
+];
+
+const statusOptions = [
+  { value: '', label: 'Todos estados' },
+  { value: 'ACTIVE', label: 'Activa' },
+  { value: 'INVESTIGATING', label: 'Investigando' },
+  { value: 'RESOLVED', label: 'Resuelta' },
+  { value: 'DISMISSED', label: 'Descartada' },
+];
 
 const checkStatusIcons: Record<string, { icon: typeof CheckCircle; color: string }> = {
   PASS: { icon: ShieldCheck, color: 'text-green-500' },
@@ -120,15 +141,32 @@ const riskLevelLabels: Record<string, string> = {
   CRITICAL: 'Critico',
 };
 
-const riskLevelColors: Record<string, string> = {
-  SAFE: 'text-green-600 bg-green-50',
-  LOW: 'text-blue-600 bg-blue-50',
-  MEDIUM: 'text-amber-600 bg-amber-50',
-  HIGH: 'text-orange-600 bg-orange-50',
-  CRITICAL: 'text-red-600 bg-red-50',
+const severityColors: Record<string, string> = {
+  CRITICA: '#EF4444',
+  ALTA: '#F97316',
+  MEDIA: '#F59E0B',
+  BAJA: '#6366F1',
 };
 
-/* ── Helpers ───────────────────────────── */
+const riskBarColor = (score: number): 'teal' | 'indigo' | 'gold' | 'red' => {
+  if (score >= 80) return 'red';
+  if (score >= 60) return 'gold';
+  if (score >= 40) return 'gold';
+  return 'teal';
+};
+
+const riskBadgeVariant = (level: string): 'success' | 'info' | 'warning' | 'danger' | 'default' => {
+  const map: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
+    SAFE: 'success',
+    LOW: 'info',
+    MEDIUM: 'warning',
+    HIGH: 'danger',
+    CRITICAL: 'danger',
+  };
+  return map[level] ?? 'default';
+};
+
+/* -- Helpers ------------------------------ */
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-ES', {
@@ -138,7 +176,7 @@ function fmtDate(iso: string): string {
   });
 }
 
-/* ── Component ─────────────────────────── */
+/* -- Component ---------------------------- */
 
 export default function FraudPage() {
   // Alert list state
@@ -156,7 +194,10 @@ export default function FraudPage() {
   const [checkResult, setCheckResult] = useState<FraudCheckResult | null>(null);
   const [checkError, setCheckError] = useState('');
 
-  /* ── Fetch alerts ─────────────────────── */
+  // Batch selection state
+  const [selectedAlertIds, setSelectedAlertIds] = useState<Set<string>>(new Set());
+
+  /* -- Fetch alerts ----------------------- */
 
   const fetchAlerts = useCallback(async (page = 1) => {
     setLoading(true);
@@ -184,7 +225,7 @@ export default function FraudPage() {
     fetchAlerts(1);
   }, [fetchAlerts]);
 
-  /* ── Fraud check ──────────────────────── */
+  /* -- Fraud check ------------------------ */
 
   async function runFraudCheck(e: React.FormEvent) {
     e.preventDefault();
@@ -210,7 +251,7 @@ export default function FraudPage() {
     }
   }
 
-  /* ── Render ───────────────────────────── */
+  /* -- Render ----------------------------- */
 
   return (
     <div className="space-y-6">
@@ -228,31 +269,87 @@ export default function FraudPage() {
           { label: 'Resueltas', value: stats.resolved, icon: CheckCircle, color: 'bg-pastel-mint text-brand-teal' },
           { label: 'Total alertas', value: pagination.total, icon: ShieldAlert, color: 'bg-pastel-purple text-brand-indigo' },
         ].map(s => (
-          <div key={s.label} className="card flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.color}`}><s.icon size={18} /></div>
-            <div>
-              <p className="text-xl font-heading font-extrabold text-brand-indigo">{s.value}</p>
-              <p className="text-xs text-brand-muted">{s.label}</p>
+          <Card key={s.label}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.color}`}><s.icon size={18} /></div>
+              <div>
+                <p className="text-xl font-heading font-extrabold text-brand-indigo">{s.value}</p>
+                <p className="text-xs text-brand-muted">{s.label}</p>
+              </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
+      {/* Risk distribution + Recent activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Donut chart */}
+        <Card>
+          <DonutChart
+            title="Distribucion por severidad"
+            data={(() => {
+              const counts: Record<string, number> = { CRITICA: 0, ALTA: 0, MEDIA: 0, BAJA: 0 };
+              alerts.forEach(a => { counts[a.severity] = (counts[a.severity] || 0) + 1; });
+              return Object.entries(counts)
+                .filter(([, v]) => v > 0)
+                .map(([key, value]) => ({
+                  label: severityLabels[key] ?? key,
+                  value,
+                  color: severityColors[key] ?? '#94A3B8',
+                }));
+            })()}
+            centerLabel="Total"
+            centerValue={String(alerts.length)}
+            size={180}
+          />
+        </Card>
+
+        {/* Recent activity timeline */}
+        <Card>
+          <h3 className="font-heading font-bold text-brand-indigo mb-4 text-sm">Actividad reciente</h3>
+          {alerts.length === 0 ? (
+            <p className="text-sm text-brand-muted">Sin actividad reciente</p>
+          ) : (
+            <div className="relative pl-6">
+              {/* Vertical line */}
+              <div className="absolute left-[7px] top-1 bottom-1 w-px bg-brand-border" />
+              <div className="space-y-4">
+                {alerts.slice(0, 5).map(a => (
+                  <div key={a.id} className="relative flex items-start gap-3">
+                    {/* Dot */}
+                    <div
+                      className="absolute -left-6 top-1 w-[14px] h-[14px] rounded-full border-2 border-white shrink-0"
+                      style={{ backgroundColor: severityColors[a.severity] ?? '#94A3B8' }}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-brand-indigo truncate">{a.title}</p>
+                      <p className="text-xs text-brand-muted">
+                        <span className="font-mono">{a.vehicle.matricula}</span>
+                        {' '}&middot; {fmtDate(a.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
+
       {/* Fraud check form */}
-      <div className="card">
+      <Card>
         <h2 className="font-heading font-bold text-brand-indigo mb-3">Verificar vehiculo</h2>
         <form onSubmit={runFraudCheck} className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
-            <input
-              type="text"
+          <div className="flex-1">
+            <Input
               value={checkMatricula}
               onChange={e => setCheckMatricula(e.target.value)}
               placeholder="Matricula (ej. 1234 ABC)"
-              className="input pl-10 w-full"
+              icon={<Search size={16} />}
             />
+            <p className="text-xs text-brand-muted mt-1">Introduce la matricula del vehiculo para analizar su historial de fraude</p>
           </div>
-          <button type="submit" disabled={checking || !checkMatricula.trim()} className="btn-primary whitespace-nowrap disabled:opacity-50">
+          <button type="submit" disabled={checking || !checkMatricula.trim()} className="btn-primary whitespace-nowrap disabled:opacity-50 self-start">
             {checking ? <Loader2 size={16} className="animate-spin mr-2 inline" /> : <ShieldAlert size={16} className="mr-2 inline" />}
             Analizar fraude
           </button>
@@ -265,7 +362,7 @@ export default function FraudPage() {
         )}
 
         {checkResult && (
-          <div className="mt-4 border border-brand-border rounded-card p-4 space-y-4">
+          <Card className="mt-4 border border-brand-border">
             {/* Vehicle + risk header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
@@ -279,32 +376,27 @@ export default function FraudPage() {
                   <p className="text-xs text-brand-muted">Puntuacion de riesgo</p>
                   <p className="text-2xl font-heading font-extrabold text-brand-indigo">{checkResult.riskScore}<span className="text-sm font-normal">/100</span></p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${riskLevelColors[checkResult.riskLevel] ?? 'text-gray-600 bg-gray-50'}`}>
+                <Badge variant={riskBadgeVariant(checkResult.riskLevel)}>
                   {riskLevelLabels[checkResult.riskLevel] ?? checkResult.riskLevel}
-                </span>
+                </Badge>
               </div>
             </div>
 
             {/* Risk bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className={`h-2.5 rounded-full transition-all ${
-                  checkResult.riskScore >= 80 ? 'bg-red-500' :
-                  checkResult.riskScore >= 60 ? 'bg-orange-500' :
-                  checkResult.riskScore >= 40 ? 'bg-amber-500' :
-                  checkResult.riskScore >= 20 ? 'bg-blue-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${checkResult.riskScore}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={checkResult.riskScore}
+              size="md"
+              color={riskBarColor(checkResult.riskScore)}
+              className="mt-3"
+            />
 
             {/* Individual checks */}
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 mt-4">
               {checkResult.checks.map(c => {
                 const cfg = checkStatusIcons[c.status] ?? checkStatusIcons.UNAVAILABLE;
                 const Icon = cfg.icon;
                 return (
-                  <div key={c.name} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50">
+                  <div key={c.name} className="flex items-start gap-2 p-2 rounded-lg bg-brand-alt-bg">
                     <Icon size={18} className={`mt-0.5 shrink-0 ${cfg.color}`} />
                     <div>
                       <p className="text-sm font-semibold text-brand-indigo">{c.name}</p>
@@ -317,58 +409,56 @@ export default function FraudPage() {
 
             {/* Active alerts from check */}
             {checkResult.alerts.length > 0 && (
-              <div>
+              <div className="mt-4">
                 <p className="text-sm font-semibold text-brand-indigo mb-2">Alertas activas ({checkResult.alerts.length})</p>
                 <div className="space-y-1">
                   {checkResult.alerts.map(a => (
                     <div key={a.id} className="flex items-center gap-2 text-sm">
                       <AlertTriangle size={14} className="text-red-500 shrink-0" />
                       <span className="font-medium">{a.title}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${severityColors[a.severity] ?? ''}`}>{severityLabels[a.severity] ?? a.severity}</span>
+                      <Badge variant={severityBadgeVariant[a.severity] ?? 'default'} className="text-[10px]">
+                        {severityLabels[a.severity] ?? a.severity}
+                      </Badge>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
+
+            {/* Reset button */}
+            <button
+              type="button"
+              onClick={() => { setCheckResult(null); setCheckMatricula(''); setCheckError(''); }}
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-brand-indigo hover:text-brand-teal transition-colors"
+            >
+              <RotateCcw size={14} />
+              Verificar otro vehiculo
+            </button>
+          </Card>
         )}
-      </div>
+      </Card>
 
       {/* Alerts list */}
-      <div className="card">
+      <Card>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-brand-indigo">Alertas de fraude</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <Select
               value={filterSeverity}
               onChange={e => setFilterSeverity(e.target.value)}
-              className="input text-sm py-1.5 w-auto"
-            >
-              <option value="">Todas severidades</option>
-              <option value="CRITICA">Critica</option>
-              <option value="ALTA">Alta</option>
-              <option value="MEDIA">Media</option>
-              <option value="BAJA">Baja</option>
-            </select>
-            <select
+              options={severityOptions}
+            />
+            <Select
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
-              className="input text-sm py-1.5 w-auto"
-            >
-              <option value="">Todos estados</option>
-              <option value="ACTIVE">Activa</option>
-              <option value="INVESTIGATING">Investigando</option>
-              <option value="RESOLVED">Resuelta</option>
-              <option value="DISMISSED">Descartada</option>
-            </select>
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
-              <input
-                type="text"
+              options={statusOptions}
+            />
+            <div className="w-48">
+              <Input
                 value={searchQ}
                 onChange={e => setSearchQ(e.target.value)}
                 placeholder="Buscar..."
-                className="input pl-10 text-sm w-48"
+                icon={<Search size={16} />}
               />
             </div>
           </div>
@@ -379,25 +469,39 @@ export default function FraudPage() {
             <Loader2 size={24} className="animate-spin mr-2" /> Cargando alertas...
           </div>
         ) : alerts.length === 0 ? (
-          <div className="text-center py-12 text-brand-muted">
-            <ShieldCheck size={40} className="mx-auto mb-3 text-brand-teal" />
-            <p className="font-heading font-bold">Sin alertas</p>
-            <p className="text-sm mt-1">No se encontraron alertas con los filtros seleccionados</p>
-          </div>
+          <EmptyState
+            icon={<ShieldCheck size={40} />}
+            title="Sin alertas"
+            description="No se encontraron alertas con los filtros seleccionados"
+          />
         ) : (
           <div className="space-y-3">
             {alerts.map(a => (
-              <div key={a.id} className={`border rounded-card p-4 hover:shadow-md transition-shadow cursor-pointer ${a.severity === 'CRITICA' ? 'border-red-200 bg-red-50/30' : 'border-brand-border'}`}>
+              <div key={a.id} className={`border rounded-card p-4 hover:shadow-md transition-shadow cursor-pointer ${a.severity === 'CRITICA' ? 'border-red-200 bg-red-50/30' : 'border-brand-border'} ${selectedAlertIds.has(a.id) ? 'ring-2 ring-brand-indigo/30' : ''}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={selectedAlertIds.has(a.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setSelectedAlertIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(a.id)) next.delete(a.id); else next.add(a.id);
+                          return next;
+                        });
+                      }}
+                      className="mt-1.5 h-4 w-4 rounded border-brand-border text-brand-indigo focus:ring-brand-indigo cursor-pointer shrink-0"
+                    />
                     <div className={`mt-1 ${a.severity === 'CRITICA' ? 'text-red-500' : a.severity === 'ALTA' ? 'text-orange-500' : a.severity === 'MEDIA' ? 'text-amber-500' : 'text-brand-muted'}`}>
                       {a.status === 'RESOLVED' || a.status === 'DISMISSED' ? <CheckCircle size={20} /> : <AlertTriangle size={20} />}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${severityColors[a.severity]}`}>
+                        <Badge variant={severityBadgeVariant[a.severity] ?? 'default'} className="text-[10px]">
                           {severityLabels[a.severity]}
-                        </span>
+                        </Badge>
                         <span className="text-xs text-brand-muted">{a.alertType}</span>
                       </div>
                       <p className="font-heading font-bold text-brand-indigo mt-1">{a.title}</p>
@@ -411,7 +515,9 @@ export default function FraudPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    <p className={`text-xs font-semibold ${statusColors[a.status]}`}>{statusLabels[a.status]}</p>
+                    <Badge variant={statusBadgeVariant[a.status] ?? 'default'} className="text-[10px]">
+                      {statusLabels[a.status]}
+                    </Badge>
                     <p className="text-xs text-brand-muted mt-1">{fmtDate(a.createdAt)}</p>
                   </div>
                 </div>
@@ -458,7 +564,41 @@ export default function FraudPage() {
             </div>
           </div>
         )}
-      </div>
+      </Card>
+      {/* Floating batch action bar */}
+      {selectedAlertIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-indigo text-white rounded-xl shadow-xl px-6 py-3 flex items-center gap-4 animate-in slide-in-from-bottom-4">
+          <span className="text-sm font-medium">{selectedAlertIds.size} alerta{selectedAlertIds.size > 1 ? 's' : ''} seleccionada{selectedAlertIds.size > 1 ? 's' : ''}</span>
+          <div className="h-5 w-px bg-white/30" />
+          <button
+            onClick={() => { /* TODO: batch update status to RESOLVED */ setSelectedAlertIds(new Set()); }}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+          >
+            <CheckCircle size={14} className="inline mr-1.5 -mt-0.5" />
+            Marcar como resuelta
+          </button>
+          <button
+            onClick={() => { /* TODO: batch update status to INVESTIGATING */ setSelectedAlertIds(new Set()); }}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+          >
+            <Eye size={14} className="inline mr-1.5 -mt-0.5" />
+            Marcar como investigando
+          </button>
+          <button
+            onClick={() => { /* TODO: batch update status to DISMISSED */ setSelectedAlertIds(new Set()); }}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+          >
+            <XCircle size={14} className="inline mr-1.5 -mt-0.5" />
+            Descartar
+          </button>
+          <button
+            onClick={() => setSelectedAlertIds(new Set())}
+            className="text-sm text-white/70 hover:text-white ml-2 transition-colors"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
     </div>
   );
 }

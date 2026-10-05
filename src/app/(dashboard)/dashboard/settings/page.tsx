@@ -3,14 +3,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Building2,
-  Users,
   Bell,
   Plug,
   Save,
   Loader2,
   CheckCircle,
   User,
+  Key,
+  Shield,
+  CreditCard,
+  Plus,
+  Eye,
+  EyeOff,
+  LogOut,
+  Monitor,
+  Terminal,
 } from 'lucide-react';
+import { Card, Input, Select, Badge, SkeletonCard, EmptyState, ProgressBar } from '@/components/ui';
 
 /* ── Types ──────────────────────────────── */
 
@@ -40,6 +49,23 @@ interface OrgData {
   website: string | null;
   logo: string | null;
   plan: string;
+}
+
+interface ApiKey {
+  id: string;
+  name: string;
+  key: string;
+  createdAt: string;
+  status: 'active' | 'revoked';
+}
+
+interface ActiveSession {
+  id: string;
+  device: string;
+  icon: typeof Monitor;
+  lastActive: string;
+  location: string;
+  current: boolean;
 }
 
 /* ── Helpers ─────────────────────────────── */
@@ -105,6 +131,70 @@ export default function SettingsPage() {
   const [orgPostcode, setOrgPostcode] = useState('');
   const [orgPhone, setOrgPhone] = useState('');
   const [orgWebsite, setOrgWebsite] = useState('');
+
+  // Notification preferences
+  const [notifPrefs, setNotifPrefs] = useState({
+    fraudAlerts: true,
+    newReports: true,
+    priceChanges: false,
+    weeklySummary: false,
+    newSources: true,
+  });
+  const [notifSaveSuccess, setNotifSaveSuccess] = useState(false);
+
+  // API Keys
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
+    { id: '1', name: 'Produccion', key: 'sk-vhq-prod-...a3f8', createdAt: '2026-08-15', status: 'active' },
+    { id: '2', name: 'Desarrollo', key: 'sk-vhq-dev-...9c2d', createdAt: '2026-09-01', status: 'active' },
+  ]);
+
+  // Security
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [sessions, setSessions] = useState<ActiveSession[]>([
+    { id: '1', device: 'Chrome en Windows', icon: Monitor, lastActive: '2026-10-04T10:30:00', location: 'Madrid, Espana', current: true },
+    { id: '2', device: 'Safari en macOS', icon: Monitor, lastActive: '2026-10-03T18:15:00', location: 'Barcelona, Espana', current: false },
+    { id: '3', device: 'API', icon: Terminal, lastActive: '2026-10-04T09:00:00', location: 'Servidor', current: false },
+  ]);
+
+  function handleGenerateApiKey() {
+    const suffix = Math.random().toString(36).substring(2, 6);
+    const newKey: ApiKey = {
+      id: String(Date.now()),
+      name: `Nueva clave ${apiKeys.length + 1}`,
+      key: `sk-vhq-new-...${suffix}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'active',
+    };
+    setApiKeys(prev => [newKey, ...prev]);
+  }
+
+  function handleRevokeApiKey(id: string) {
+    setApiKeys(prev => prev.map(k => k.id === id ? { ...k, status: 'revoked' as const } : k));
+  }
+
+  function handleChangePassword() {
+    if (!currentPassword || !newPassword || newPassword !== confirmPassword) return;
+    setPasswordSuccess(true);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setTimeout(() => setPasswordSuccess(false), 3000);
+  }
+
+  function handleCloseSession(id: string) {
+    setSessions(prev => prev.filter(s => s.id !== id));
+  }
+
+  function handleSaveNotifications() {
+    setNotifSaveSuccess(true);
+    setTimeout(() => setNotifSaveSuccess(false), 3000);
+  }
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -208,12 +298,22 @@ export default function SettingsPage() {
     { id: 'empresa', label: 'Organizacion', icon: Building2 },
     { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
     { id: 'integraciones', label: 'Integraciones', icon: Plug },
+    { id: 'api-keys', label: 'API Keys', icon: Key },
+    { id: 'seguridad', label: 'Seguridad', icon: Shield },
+    { id: 'facturacion', label: 'Uso y facturacion', icon: CreditCard },
   ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-brand-muted">
-        <Loader2 size={28} className="animate-spin mr-3" /> Cargando configuracion...
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-extrabold">Configuracion</h1>
+          <p className="text-brand-muted mt-1">Perfil, organizacion, notificaciones e integraciones</p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -245,7 +345,7 @@ export default function SettingsPage() {
 
       {/* Mi perfil */}
       {tab === 'perfil' && profile && (
-        <div className="card">
+        <Card>
           <h2 className="font-heading font-bold text-brand-indigo mb-4">Mi perfil</h2>
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-brand-border">
@@ -272,26 +372,10 @@ export default function SettingsPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-brand-muted font-semibold block mb-1">Nombre completo</label>
-              <input value={profileName} onChange={e => setProfileName(e.target.value)} className="input text-sm" />
-            </div>
-            <div>
-              <label className="text-xs text-brand-muted font-semibold block mb-1">Email</label>
-              <input value={profile.email} disabled className="input text-sm bg-gray-50 text-brand-muted cursor-not-allowed" />
-            </div>
-            <div>
-              <label className="text-xs text-brand-muted font-semibold block mb-1">Telefono</label>
-              <input value={profilePhone} onChange={e => setProfilePhone(e.target.value)} placeholder="+34 600 000 000" className="input text-sm" />
-            </div>
-            <div>
-              <label className="text-xs text-brand-muted font-semibold block mb-1">Idioma</label>
-              <select value={profileLocale} onChange={e => setProfileLocale(e.target.value)} className="input text-sm">
-                <option value="es">Espanol</option>
-                <option value="en">English</option>
-                <option value="nl">Nederlands</option>
-              </select>
-            </div>
+            <Input label="Nombre completo" value={profileName} onChange={e => setProfileName(e.target.value)} />
+            <Input label="Email" value={profile.email} disabled />
+            <Input label="Telefono" value={profilePhone} onChange={e => setProfilePhone(e.target.value)} placeholder="+34 600 000 000" />
+            <Select label="Idioma" value={profileLocale} onChange={e => setProfileLocale(e.target.value)} options={[{value:'es',label:'Espanol'},{value:'en',label:'English'},{value:'nl',label:'Nederlands'}]} />
           </div>
 
           <div className="flex items-center gap-3 mt-4">
@@ -304,20 +388,16 @@ export default function SettingsPage() {
               </span>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Organizacion */}
       {tab === 'empresa' && (
-        <div className="card">
+        <Card>
           <h2 className="font-heading font-bold text-brand-indigo mb-4">Datos de la organizacion</h2>
 
           {!org ? (
-            <div className="text-center py-12 text-brand-muted">
-              <Building2 size={40} className="mx-auto mb-3" />
-              <p className="font-heading font-bold">Sin organizacion</p>
-              <p className="text-sm mt-1">No tienes una organizacion asignada. Contacta con un administrador.</p>
-            </div>
+            <EmptyState icon={<Building2 size={48} />} title="Sin organizacion" description="No tienes una organizacion asignada. Contacta con un administrador." />
           ) : (
             <>
               {!isAdmin && (
@@ -326,46 +406,17 @@ export default function SettingsPage() {
                 </div>
               )}
               <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Nombre</label>
-                  <input value={orgName} onChange={e => setOrgName(e.target.value)} disabled={!isAdmin} className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Tipo</label>
-                  <select value={orgType} onChange={e => setOrgType(e.target.value)} disabled={!isAdmin} className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`}>
-                    {Object.entries(orgTypeLabels).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">CIF / NIF</label>
-                  <input value={orgTaxId} onChange={e => setOrgTaxId(e.target.value)} disabled={!isAdmin} placeholder="B-12345678" className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Telefono</label>
-                  <input value={orgPhone} onChange={e => setOrgPhone(e.target.value)} disabled={!isAdmin} placeholder="+34 912 345 678" className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
+                <Input label="Nombre" value={orgName} onChange={e => setOrgName(e.target.value)} disabled={!isAdmin} />
+                <Select label="Tipo" value={orgType} onChange={e => setOrgType(e.target.value)} disabled={!isAdmin} options={Object.entries(orgTypeLabels).map(([k, v]) => ({value:k, label:v}))} />
+                <Input label="CIF / NIF" value={orgTaxId} onChange={e => setOrgTaxId(e.target.value)} disabled={!isAdmin} placeholder="B-12345678" />
+                <Input label="Telefono" value={orgPhone} onChange={e => setOrgPhone(e.target.value)} disabled={!isAdmin} placeholder="+34 912 345 678" />
                 <div className="md:col-span-2">
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Direccion</label>
-                  <input value={orgAddress} onChange={e => setOrgAddress(e.target.value)} disabled={!isAdmin} placeholder="Calle, numero" className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
+                  <Input label="Direccion" value={orgAddress} onChange={e => setOrgAddress(e.target.value)} disabled={!isAdmin} placeholder="Calle, numero" />
                 </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Ciudad</label>
-                  <input value={orgCity} onChange={e => setOrgCity(e.target.value)} disabled={!isAdmin} className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Provincia</label>
-                  <input value={orgProvince} onChange={e => setOrgProvince(e.target.value)} disabled={!isAdmin} className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Codigo postal</label>
-                  <input value={orgPostcode} onChange={e => setOrgPostcode(e.target.value)} disabled={!isAdmin} placeholder="28001" className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
-                <div>
-                  <label className="text-xs text-brand-muted font-semibold block mb-1">Sitio web</label>
-                  <input value={orgWebsite} onChange={e => setOrgWebsite(e.target.value)} disabled={!isAdmin} placeholder="www.ejemplo.es" className={`input text-sm ${!isAdmin ? 'bg-gray-50 text-brand-muted cursor-not-allowed' : ''}`} />
-                </div>
+                <Input label="Ciudad" value={orgCity} onChange={e => setOrgCity(e.target.value)} disabled={!isAdmin} />
+                <Input label="Provincia" value={orgProvince} onChange={e => setOrgProvince(e.target.value)} disabled={!isAdmin} />
+                <Input label="Codigo postal" value={orgPostcode} onChange={e => setOrgPostcode(e.target.value)} disabled={!isAdmin} placeholder="28001" />
+                <Input label="Sitio web" value={orgWebsite} onChange={e => setOrgWebsite(e.target.value)} disabled={!isAdmin} placeholder="www.ejemplo.es" />
               </div>
 
               {isAdmin && (
@@ -382,40 +433,54 @@ export default function SettingsPage() {
               )}
             </>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Notificaciones */}
       {tab === 'notificaciones' && (
-        <div className="card">
+        <Card>
           <h2 className="font-heading font-bold text-brand-indigo mb-4">Preferencias de notificaciones</h2>
           <div className="space-y-4">
-            {[
-              { label: 'Alertas de fraude', desc: 'Recibir notificaciones cuando se detecte un vehiculo con riesgo', default: true },
-              { label: 'Nuevos informes', desc: 'Aviso cuando un informe este listo para descargar', default: true },
-              { label: 'Cambios de precio en mercado', desc: 'Alertas de variaciones significativas de precio por modelo', default: false },
-              { label: 'Resumen semanal', desc: 'Email con resumen de actividad y tendencias cada lunes', default: false },
-              { label: 'Nuevas fuentes de datos', desc: 'Notificacion cuando se integren nuevos portales de datos', default: true },
-            ].map((n, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-brand-border/50 last:border-0">
+            {([
+              { key: 'fraudAlerts' as const, label: 'Alertas de fraude', desc: 'Recibir notificaciones cuando se detecte un vehiculo con riesgo' },
+              { key: 'newReports' as const, label: 'Nuevos informes', desc: 'Aviso cuando un informe este listo para descargar' },
+              { key: 'priceChanges' as const, label: 'Cambios de precio en mercado', desc: 'Alertas de variaciones significativas de precio por modelo' },
+              { key: 'weeklySummary' as const, label: 'Resumen semanal', desc: 'Email con resumen de actividad y tendencias cada lunes' },
+              { key: 'newSources' as const, label: 'Nuevas fuentes de datos', desc: 'Notificacion cuando se integren nuevos portales de datos' },
+            ]).map((n) => (
+              <div key={n.key} className="flex items-center justify-between py-2 border-b border-brand-border/50 last:border-0">
                 <div>
                   <p className="text-sm font-semibold text-brand-indigo">{n.label}</p>
                   <p className="text-xs text-brand-muted">{n.desc}</p>
                 </div>
                 <label className="relative inline-flex cursor-pointer">
-                  <input type="checkbox" defaultChecked={n.default} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-200 peer-checked:bg-brand-teal rounded-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                  <input
+                    type="checkbox"
+                    checked={notifPrefs[n.key]}
+                    onChange={() => setNotifPrefs(prev => ({ ...prev, [n.key]: !prev[n.key] }))}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-pastel-blue peer-checked:bg-brand-teal rounded-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
                 </label>
               </div>
             ))}
           </div>
-          <p className="text-xs text-brand-muted mt-4">Las preferencias de notificaciones se guardaran automaticamente en una version futura.</p>
-        </div>
+          <div className="flex items-center gap-3 mt-4">
+            <button onClick={handleSaveNotifications} className="btn-primary flex items-center gap-2">
+              <Save size={16} /> Guardar preferencias
+            </button>
+            {notifSaveSuccess && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle size={14} /> Preferencias guardadas correctamente
+              </span>
+            )}
+          </div>
+        </Card>
       )}
 
       {/* Integraciones */}
       {tab === 'integraciones' && (
-        <div className="card">
+        <Card>
           <h2 className="font-heading font-bold text-brand-indigo mb-4">Fuentes de datos e integraciones</h2>
           <p className="text-sm text-brand-muted mb-4">Conexiones con portales de datos vehiculares y servicios externos.</p>
           <div className="space-y-3">
@@ -430,18 +495,255 @@ export default function SettingsPage() {
                     <p className="text-xs text-brand-muted">{int.desc}</p>
                   </div>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-button ${
-                    int.status === 'conectado'
-                      ? 'bg-pastel-mint text-brand-teal'
-                      : 'bg-gray-100 text-brand-muted'
-                  }`}
-                >
-                  {int.status === 'conectado' ? 'Conectado' : 'Proximamente'}
-                </span>
+                {int.status === 'conectado'
+                  ? <Badge variant="teal">Conectado</Badge>
+                  : <Badge variant="default">Proximamente</Badge>
+                }
               </div>
             ))}
           </div>
+        </Card>
+      )}
+
+      {/* API Keys */}
+      {tab === 'api-keys' && (
+        <div className="space-y-6">
+          <Card>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="font-heading font-bold text-brand-indigo mb-1">Claves de API</h2>
+                <p className="text-sm text-brand-muted">
+                  Usa las claves de API para autenticar tus peticiones a la API de VEHIQ. Manten tus claves seguras y no las compartas publicamente.
+                </p>
+              </div>
+              <button onClick={handleGenerateApiKey} className="btn-primary flex items-center gap-2 shrink-0">
+                <Plus size={16} /> Generar nueva API key
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {apiKeys.map(apiKey => (
+                <div key={apiKey.id} className="flex items-center justify-between p-3 rounded-lg border border-brand-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-pastel-blue rounded-lg flex items-center justify-center">
+                      <Key size={18} className="text-brand-indigo" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-brand-indigo">{apiKey.name}</p>
+                      <p className="text-xs text-brand-muted font-mono">{apiKey.key}</p>
+                      <p className="text-xs text-brand-muted mt-0.5">Creada el {new Date(apiKey.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {apiKey.status === 'active'
+                      ? <Badge variant="teal">Activa</Badge>
+                      : <Badge variant="default">Revocada</Badge>
+                    }
+                    {apiKey.status === 'active' && (
+                      <button
+                        onClick={() => handleRevokeApiKey(apiKey.id)}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                      >
+                        Revocar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Seguridad */}
+      {tab === 'seguridad' && (
+        <div className="space-y-6">
+          {/* Cambio de contrasena */}
+          <Card>
+            <h2 className="font-heading font-bold text-brand-indigo mb-4">Cambiar contrasena</h2>
+            <div className="grid md:grid-cols-1 gap-4 max-w-md">
+              <div className="relative">
+                <Input
+                  label="Contrasena actual"
+                  type={showCurrentPw ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  placeholder="Introduce tu contrasena actual"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPw(!showCurrentPw)}
+                  className="absolute right-3 top-[34px] text-brand-muted hover:text-brand-indigo"
+                >
+                  {showCurrentPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="relative">
+                <Input
+                  label="Nueva contrasena"
+                  type={showNewPw ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Minimo 8 caracteres"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPw(!showNewPw)}
+                  className="absolute right-3 top-[34px] text-brand-muted hover:text-brand-indigo"
+                >
+                  {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <Input
+                label="Confirmar nueva contrasena"
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Repite la nueva contrasena"
+              />
+            </div>
+            <div className="flex items-center gap-3 mt-4">
+              <button
+                onClick={handleChangePassword}
+                disabled={!currentPassword || !newPassword || newPassword !== confirmPassword}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save size={16} /> Actualizar contrasena
+              </button>
+              {passwordSuccess && (
+                <span className="text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle size={14} /> Contrasena actualizada correctamente
+                </span>
+              )}
+              {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                <span className="text-sm text-red-500">Las contrasenas no coinciden</span>
+              )}
+            </div>
+          </Card>
+
+          {/* Autenticacion de dos factores */}
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-heading font-bold text-brand-indigo mb-1">Autenticacion de dos factores (2FA)</h2>
+                <p className="text-sm text-brand-muted">
+                  Anade una capa adicional de seguridad a tu cuenta. Cuando este activada, necesitaras un codigo de verificacion ademas de tu contrasena para iniciar sesion.
+                </p>
+              </div>
+              <label className="relative inline-flex cursor-pointer shrink-0 ml-4">
+                <input
+                  type="checkbox"
+                  checked={twoFactorEnabled}
+                  onChange={() => setTwoFactorEnabled(!twoFactorEnabled)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-pastel-blue peer-checked:bg-brand-teal rounded-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+              </label>
+            </div>
+            {twoFactorEnabled && (
+              <div className="mt-3 p-3 bg-pastel-mint/30 rounded-lg text-sm text-brand-teal">
+                <CheckCircle size={14} className="inline mr-1" />
+                La autenticacion de dos factores esta activada.
+              </div>
+            )}
+          </Card>
+
+          {/* Sesiones activas */}
+          <Card>
+            <h2 className="font-heading font-bold text-brand-indigo mb-4">Sesiones activas</h2>
+            <p className="text-sm text-brand-muted mb-4">Dispositivos y aplicaciones que han iniciado sesion en tu cuenta.</p>
+            <div className="space-y-3">
+              {sessions.map(session => (
+                <div key={session.id} className="flex items-center justify-between p-3 rounded-lg border border-brand-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-pastel-blue rounded-lg flex items-center justify-center">
+                      <session.icon size={18} className="text-brand-indigo" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-brand-indigo flex items-center gap-2">
+                        {session.device}
+                        {session.current && <span className="text-xs px-1.5 py-0.5 rounded bg-pastel-mint text-brand-teal font-medium">Sesion actual</span>}
+                      </p>
+                      <p className="text-xs text-brand-muted">
+                        {session.location} &middot; Ultimo acceso: {new Date(session.lastActive).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  {!session.current && (
+                    <button
+                      onClick={() => handleCloseSession(session.id)}
+                      className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors flex items-center gap-1"
+                    >
+                      <LogOut size={14} /> Cerrar sesion
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Uso y facturacion */}
+      {tab === 'facturacion' && (
+        <div className="space-y-6">
+          {/* Plan actual */}
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-heading font-bold text-brand-indigo mb-1">Plan actual</h2>
+                <p className="text-sm text-brand-muted">Tu suscripcion y detalles de facturacion.</p>
+              </div>
+              <button className="btn-primary flex items-center gap-2">
+                Cambiar plan
+              </button>
+            </div>
+            <div className="p-4 rounded-lg border border-brand-border bg-pastel-mint/10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center">
+                  <CreditCard size={24} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-heading font-bold text-brand-indigo text-lg">
+                    Plan {planLabels[profile?.plan ?? 'FREE'] ?? profile?.plan}
+                  </p>
+                  <p className="text-sm text-brand-muted">Proxima facturacion: 1 de noviembre de 2026</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Uso del mes */}
+          <Card>
+            <h2 className="font-heading font-bold text-brand-indigo mb-4">Uso este mes</h2>
+            <div className="space-y-5">
+              <ProgressBar
+                label="Llamadas a la API"
+                value={2847}
+                max={5000}
+                showValue
+                size="md"
+                color="teal"
+              />
+              <ProgressBar
+                label="Informes generados"
+                value={34}
+                max={100}
+                showValue
+                size="md"
+                color="indigo"
+              />
+              <ProgressBar
+                label="Vehiculos rastreados"
+                value={156}
+                max={500}
+                showValue
+                size="md"
+                color="gold"
+              />
+            </div>
+            <p className="text-xs text-brand-muted mt-4">El ciclo de facturacion se reinicia el 1 de cada mes.</p>
+          </Card>
         </div>
       )}
     </div>
