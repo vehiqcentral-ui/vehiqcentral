@@ -20,9 +20,9 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
     errorParam === 'CredentialsSignin'
-      ? 'Email o contraseña incorrectos'
+      ? 'E-mailadres of wachtwoord onjuist'
       : errorParam
-        ? 'Ha ocurrido un error. Inténtalo de nuevo.'
+        ? 'Er is een fout opgetreden. Probeer het opnieuw.'
         : ''
   );
 
@@ -39,7 +39,7 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError('Email o contraseña incorrectos');
+        setError('E-mailadres of wachtwoord onjuist');
         setLoading(false);
         return;
       }
@@ -47,7 +47,7 @@ function LoginForm() {
       router.push(callbackUrl);
       router.refresh();
     } catch {
-      setError('Error de conexión. Inténtalo de nuevo.');
+      setError('Verbindingsfout. Probeer het opnieuw.');
       setLoading(false);
     }
   };
@@ -56,10 +56,10 @@ function LoginForm() {
     <div className="w-full max-w-md">
       <div className="bg-white rounded-card border border-brand-border shadow-sm p-8">
         <h1 className="text-2xl font-heading font-extrabold text-brand-indigo text-center mb-1">
-          Accede a tu cuenta
+          Inloggen op uw account
         </h1>
         <p className="text-sm text-brand-muted text-center font-body mb-8">
-          Introduce tus credenciales para continuar
+          Voer uw inloggegevens in om verder te gaan
         </p>
 
         {error && (
@@ -80,7 +80,7 @@ function LoginForm() {
               <input
                 type="email"
                 className="input pl-10"
-                placeholder="tu@empresa.com"
+                placeholder="uw@bedrijf.nl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -93,14 +93,14 @@ function LoginForm() {
           {/* Password */}
           <div>
             <label className="block text-sm font-body font-medium text-brand-navy mb-1.5">
-              Contraseña
+              Wachtwoord
             </label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted pointer-events-none" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 className="input pl-10 pr-10"
-                placeholder="Tu contraseña"
+                placeholder="Uw wachtwoord"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -127,13 +127,13 @@ function LoginForm() {
                 onChange={(e) => setRemember(e.target.checked)}
                 className="w-4 h-4 rounded border-brand-border text-brand-teal focus:ring-brand-teal/30"
               />
-              <span className="text-sm text-brand-body font-body">Recordar sesión</span>
+              <span className="text-sm text-brand-body font-body">Sessie onthouden</span>
             </label>
             <Link
               href="/forgot-password"
               className="text-sm text-brand-teal font-body hover:underline"
             >
-              ¿Olvidaste tu contraseña?
+              Wachtwoord vergeten?
             </Link>
           </div>
 
@@ -142,10 +142,10 @@ function LoginForm() {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Iniciando sesión...
+                Inloggen...
               </span>
             ) : (
-              'Iniciar sesión'
+              'Inloggen'
             )}
           </Button>
         </form>
@@ -155,12 +155,15 @@ function LoginForm() {
           <p className="text-xs text-brand-muted font-body text-center">
             <strong className="text-brand-navy">Demo:</strong> admin@vehiqcentral.es / Vehiq2024!
           </p>
+          <p className="text-xs text-brand-muted font-body text-center mt-1">
+            (Kopieer en plak voor beste resultaat)
+          </p>
         </div>
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-6">
           <div className="flex-1 h-px bg-brand-border" />
-          <span className="text-xs text-brand-muted font-body">o continúa con</span>
+          <span className="text-xs text-brand-muted font-body">of ga verder met</span>
           <div className="flex-1 h-px bg-brand-border" />
         </div>
 
@@ -196,9 +199,9 @@ function LoginForm() {
       </div>
 
       <p className="text-sm text-brand-muted font-body text-center mt-6">
-        ¿No tienes cuenta?{' '}
+        Nog geen account?{' '}
         <Link href="/pricing-request" className="text-brand-teal font-semibold hover:underline">
-          Solicitar acceso
+          Toegang aanvragen
         </Link>
       </p>
     </div>
