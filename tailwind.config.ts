@@ -27,8 +27,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ['Nunito', 'system-ui', 'sans-serif'],
-        body: ['Fira Sans', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         card: '16px',
