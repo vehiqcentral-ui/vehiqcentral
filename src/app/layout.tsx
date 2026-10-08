@@ -18,10 +18,10 @@ const firaSans = Fira_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'VEHIQ Central — Tu centro de datos automotriz en España',
+  title: 'VehiqCentral — Alles-in-één platform voor automotive professionals',
   description:
-    'Historial de vehículos, valoraciones con IA, detección de fraude y analítica de mercado para el sector automotriz español.',
-  keywords: ['automotive', 'vehicle history', 'valuation', 'Spain', 'DGT', 'ITV'],
+    'Voertuiggeschiedenis, AI-taxaties, fraudedetectie en marktanalyse voor de Nederlandse automotive sector.',
+  keywords: ['automotive', 'voertuighistorie', 'taxatie', 'Nederland', 'RDW', 'APK'],
 };
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${nunito.variable} ${firaSans.variable}`}>
+    <html lang="nl" className={`${nunito.variable} ${firaSans.variable}`}>
       <body className="font-body text-brand-body bg-white antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>
