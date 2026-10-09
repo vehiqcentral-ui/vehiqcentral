@@ -71,7 +71,8 @@ export default function HomePage() {
               </div>
             </div>
             <div className="relative lg:h-[480px] h-72 rounded-2xl overflow-hidden shadow-xl">
-              <img src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=900&auto=format&fit=crop&q=80" alt="Automotive professional werkt aan laptop in showroom" className="w-full h-full object-cover" />
+              {/* Moderne autoshowroom met meerdere auto's in rijen — past perfect bij dealers/importeurs */}
+              <img src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=900&auto=format&fit=crop&q=80" alt="Moderne autoshowroom met meerdere voertuigen" className="w-full h-full object-cover" />
               <div className="absolute bottom-5 left-5 bg-white rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#0057B8] flex items-center justify-center flex-shrink-0"><TrendingUp size={20} className="text-white" /></div>
                 <div><p className="text-xs text-gray-400">Voertuigen geanalyseerd</p><p className="font-extrabold text-[#1a1f5e] text-lg leading-tight">2M+ / maand</p></div>
@@ -90,7 +91,8 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14">
             <div className="relative rounded-2xl overflow-hidden h-72 lg:h-96 shadow-lg order-2 lg:order-1">
-              <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80" alt="Automotive professionals in garage" className="w-full h-full object-cover" />
+              {/* Dealer en klant bij auto in showroom — past bij "voor wie" sectie over verschillende doelgroepen */}
+              <img src="https://images.unsplash.com/photo-1560250097-0dc05edf6851?w=800&auto=format&fit=crop&q=80" alt="Automotive professional bespreekt voertuig met klant" className="w-full h-full object-cover" />
             </div>
             <div className="order-1 lg:order-2">
               <p className="text-sm font-bold tracking-widest uppercase text-[#0CB8A0] mb-3">Voor wie</p>
@@ -157,7 +159,8 @@ export default function HomePage() {
               </div>
             </div>
             <div className="relative rounded-2xl overflow-hidden h-80 lg:h-[520px] shadow-xl">
-              <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=80" alt="Professional werkt met automotive data op laptop" className="w-full h-full object-cover" />
+              {/* Medewerker in autobedrijf werkt op tablet terwijl hij kenteken scant / voertuig inspecteert */}
+              <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&auto=format&fit=crop&q=80" alt="Automotive professional werkt met digitale voertuigdata op tablet" className="w-full h-full object-cover" />
               <div className="absolute bottom-5 right-5 bg-[#1a1f5e] text-white rounded-xl shadow-lg px-4 py-3 flex items-center gap-2">
                 <Clock size={16} className="text-[#FFCC00]" /><span className="text-sm font-bold">Realtime data-updates</span>
               </div>
@@ -185,8 +188,9 @@ export default function HomePage() {
       </section>
 
       <section className="relative h-64 sm:h-80 overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1600&auto=format&fit=crop&q=80" alt="Automotive showroom" className="w-full h-full object-cover object-center" />
-        <div className="absolute inset-0 bg-[#1a1f5e]/50 flex items-center justify-center">
+        {/* Rij auto's op een parkeerplaats van een dealer / importeur — past bij 500+ bedrijven */}
+        <img src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1600&auto=format&fit=crop&q=80" alt="Grote voorraad voertuigen bij automotive bedrijf" className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-[#1a1f5e]/55 flex items-center justify-center">
           <div className="text-center text-white px-4">
             <p className="text-2xl sm:text-3xl font-extrabold mb-2">500+ bedrijven vertrouwen op VehiqCentral</p>
             <p className="text-white/80 text-lg">Van startende dealer tot nationale dealerholding</p>
